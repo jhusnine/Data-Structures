@@ -173,7 +173,46 @@ int main()
      return 0;
 }
 
+ACTIVITY#5
+#include <stdio.h>
 
+int main() {
+    int num_items, choice;
+    float price, total = 0, quantity, discount = 0;
+    char add_more;
+
+    do {
+        printf("Enter the number of different items you want to add to the bill: ");
+        scanf("%d", &num_items);
+
+        for (int i = 1; i <= num_items; i++) {
+            printf("Enter the price of item %d: ", i);
+            scanf("%f", &price);
+
+            printf("Enter the quantity of item %d: ", i);
+            scanf("%f", &quantity);
+            total += price * quantity;
+        }
+
+        printf("Do you want to add more items? (y/n): ");
+        scanf(" %c", &add_more); // Use %c to capture character input
+
+    } while (add_more == 'y' || add_more == 'Y'); // Check for both lowercase and uppercase 'y'
+
+    printf("\nTotal amount before discount: P%.2f\n", total);
+
+    if (total > 500) {
+        discount = total * 0.10; // 10% discount
+    } else if (total >= 200 && total <= 500) {
+        discount = total * 0.05; // 5% discount
+    }
+    
+    total -= discount; // Apply the discount to the total
+    printf("Discount applied: P%.2f\n", discount);
+    printf("Final total after discount: P%.2f\n", total);
+
+    return 0;
+}
 
 
 
