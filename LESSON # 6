@@ -215,7 +215,13 @@ int main() {
 }
 
 
+10/29/2024
 
+QUICK sort
+    - merge sort
+    - is a divide and conquer algorithm
+    :Always pick first element, last element as pivot
+    
 
 
 
