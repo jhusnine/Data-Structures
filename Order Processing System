@@ -1,0 +1,180 @@
+Create a Order Processing System in C that will have:
+
+Order Processing: Orders will be placed by customers and processed by the system.
+Order Modification: Customers can modify their orders.
+Order Cancellations: Customers can cancel their orders.
+Undo: Customers can undo their last modification or cancellation.
+Order Completion:Completed orders will be removed from the queue.
+Use Stacks and Queues to handle the system's core features and will handle multiple types of food items, 
+process customer orders, allow users to modify or cancel orders, and track the status of the orders.
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX 5
+
+typedef struct {
+    int id;
+    char name[20];
+    int price;
+} FoodItem;
+
+typedef struct {
+    int customerId;
+    char action[20];
+    FoodItem foodItem;
+} Transaction;
+
+typedef struct {
+    int front, rear;
+    Transaction orders[MAX];
+} OrderQueue;
+
+typedef struct {
+    int top;
+    Transaction stack[MAX];
+} UndoStack;
+
+FoodItem menu[] = {
+    {1, "Burger", 5}, {2, "Pizza", 8}, {3, "Pasta", 7}, {4, "Salad", 4}, {5, "Soup", 3}
+};
+
+void initQueue(OrderQueue *q) { q->front = q->rear = -1; }
+void initStack(UndoStack *s) { s->top = -1; }
+int isQFull(OrderQueue *q) { return q->rear == MAX - 1; }
+int isQEmpty(OrderQueue *q) { return q->front == -1; }
+int isSFull(UndoStack *s) { return s->top == MAX - 1; }
+int isSEmpty(UndoStack *s) { return s->top == -1; }
+
+void enqueue(OrderQueue *q, Transaction t) {
+    if (isQFull(q)) { printf("Error: Order Queue is Full\n"); return; }
+    if (q->front == -1) q->front = 0;
+    q->orders[++q->rear] = t;
+    printf("Order placed successfully.\n");
+}
+
+Transaction dequeue(OrderQueue *q) {
+    Transaction empty = {0};
+    if (isQEmpty(q)) { printf("Error: No orders to complete.\n"); return empty; }
+    Transaction order = q->orders[q->front];
+    if (q->front == q->rear) q->front = q->rear = -1;
+    else q->front++;
+    return order;
+}
+
+void push(UndoStack *s, Transaction t) {
+    if (isSFull(s)) { printf("Error: Undo stack is full.\n"); return; }
+    s->stack[++s->top] = t;
+}
+
+Transaction pop(UndoStack *s) {
+    Transaction empty = {0};
+    if (isSEmpty(s)) { printf("No transaction to undo.\n"); return empty; }
+    return s->stack[s->top--];
+}
+
+void displayMenu() {
+    printf("Food Menu:\n");
+    for (int i = 0; i < 5; i++)
+        printf("%d. %s - P%d\n", menu[i].id, menu[i].name, menu[i].price);
+}
+
+void displayQueue(OrderQueue *q) {
+    if (isQEmpty(q)) { printf("No orders to display.\n"); return; }
+    printf("Current Orders:\n");
+    for (int i = q->front; i <= q->rear; i++)
+        printf("Customer %d: %s - P%d\n", q->orders[i].customerId, q->orders[i].foodItem.name, q->orders[i].foodItem.price);
+}
+
+void placeOrder(OrderQueue *q, UndoStack *us) {
+    int id, choice;
+    Transaction t;
+    printf("Enter Customer ID: ");
+    scanf("%d", &id);
+    displayMenu();
+    printf("Enter food item number to order (1-5): ");
+    scanf("%d", &choice);
+    t.customerId = id;
+    t.foodItem = menu[choice - 1];
+    strcpy(t.action, "placed");
+    enqueue(q, t);
+    push(us, t);
+    printf("Transaction added: Customer %d placed an order for %s\n", id, t.foodItem.name);
+}
+
+void modifyOrder(OrderQueue *q, UndoStack *us) {
+    int id, choice;
+    Transaction t;
+    printf("Enter Customer ID: ");
+    scanf("%d", &id);
+    displayQueue(q);
+    printf("Enter food item number to modify (1-5): ");
+    scanf("%d", &choice);
+    t.customerId = id;
+    t.foodItem = menu[choice - 1];
+    strcpy(t.action, "modified");
+    enqueue(q, t);
+    push(us, t);
+    printf("Transaction added: Customer %d modified their order to %s\n", id, t.foodItem.name);
+}
+
+void cancelOrder(OrderQueue *q, UndoStack *us) {
+    int id;
+    Transaction t;
+    printf("Enter Customer ID: ");
+    scanf("%d", &id);
+    t = dequeue(q);
+    strcpy(t.action, "cancelled");
+    push(us, t);
+    printf("Transaction added: Customer %d cancelled their order for %s\n", id, t.foodItem.name);
+}
+
+void completeOrder(OrderQueue *q, UndoStack *us) {
+    Transaction t = dequeue(q);
+    if (t.customerId == 0) { printf("No orders to complete.\n"); return; }
+    strcpy(t.action, "completed");
+    push(us, t);
+    printf("Order for %s completed.\n", t.foodItem.name);
+}
+
+void undoLastAction(UndoStack *us, OrderQueue *q) {
+    Transaction t = pop(us);
+    if (t.customerId == 0) return;
+    if (!strcmp(t.action, "placed")) {
+        printf("Undoing transaction: Customer %d placed an order for %s\n", t.customerId, t.foodItem.name);
+        dequeue(q);
+    } else if (!strcmp(t.action, "cancelled")) {
+        printf("Undoing transaction: Customer %d cancelled an order for %s\n", t.customerId, t.foodItem.name);
+        enqueue(q, t);
+    } else if (!strcmp(t.action, "modified")) {
+        printf("Undoing transaction: Customer %d modified an order to %s\n", t.customerId, t.foodItem.name);
+        enqueue(q, t);
+    }
+}
+
+int main() {
+    OrderQueue q;
+    UndoStack us;
+    int ch;
+    initQueue(&q);
+    initStack(&us);
+    do {
+        printf("\nOnline Order Processing System Menu:\n");
+        printf("1. Place an Order\n2. Modify an Order\n3. Cancel an Order\n4. Complete an Order\n5. Undo Last Action\n6. Display Food Menu\n7. Exit\n");
+        printf("Enter your choice: ");
+        scanf("%d", &ch);
+        switch (ch) {
+            case 1: placeOrder(&q, &us); break;
+            case 2: modifyOrder(&q, &us); break;
+            case 3: cancelOrder(&q, &us); break;
+            case 4: completeOrder(&q, &us); break;
+            case 5: undoLastAction(&us, &q); break;
+            case 6: displayMenu(); break;
+            case 7: printf("Exiting the Online Order Processing System.\n"); break;
+            default: printf("Invalid choice! Please try again.\n");
+        }
+    } while (ch != 7);
+    return 0;
+}
